@@ -7,7 +7,7 @@ const profile = {
   location: 'Bangalore 560077',
   email: 'rjksharma23@gmail.com',
   phone: '+91 9845145571',
-  linkedin: 'https://www.linkedin.com/in/rjkshrama33',
+  linkedin: 'https://www.linkedin.com/in/rjksharma33',
   resume: `${import.meta.env.BASE_URL}RAJKUMAR_CV.pdf`,
   socials: [
     {
@@ -22,7 +22,7 @@ const profile = {
     },
     {
       name: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/rjkshrama33',
+      href: 'https://www.linkedin.com/in/rjksharma33',
       icon: 'linkedin',
     },
     {
