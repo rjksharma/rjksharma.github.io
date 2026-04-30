@@ -1205,7 +1205,6 @@ function App() {
 
                   <div className="project-footer">
                     <span>{project.result}</span>
-                    <span className="project-open-indicator">Open Case Study</span>
                   </div>
                 </Reveal>
               )
@@ -1263,9 +1262,6 @@ function App() {
             </a>
           ))}
         </div>
-
-        <p>Portfolio content updated from Raj Kumar&apos;s professional resume.</p>
-        <p>Replace the placeholder YouTube, Instagram, and GitHub links in `profile.socials` before publishing.</p>
       </footer>
     </div>
   )
