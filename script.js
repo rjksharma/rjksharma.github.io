@@ -153,43 +153,15 @@ const getVisibleCount = (carousel) => {
   return desktop;
 };
 
-const updateCarouselButtons = (state) => {
-  const { currentPage, pageOffsets, prevButton, nextButton, status, paginationButtons } = state;
-  const totalPages = pageOffsets.length;
-
-  if (status) {
-    status.textContent = `${String(currentPage + 1).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`;
+const getWrappedPage = (page, totalPages) => {
+  if (totalPages <= 0) {
+    return 0;
   }
 
-  if (prevButton) {
-    prevButton.disabled = currentPage === 0;
-  }
-
-  if (nextButton) {
-    nextButton.disabled = currentPage === totalPages - 1;
-  }
-
-  paginationButtons.forEach((button, index) => {
-    button.classList.toggle("is-active", index === currentPage);
-    button.setAttribute("aria-current", index === currentPage ? "true" : "false");
-  });
+  return ((page % totalPages) + totalPages) % totalPages;
 };
 
-const scrollCarouselToPage = (state, page, smooth = true) => {
-  const targetPage = Math.max(0, Math.min(page, state.pageOffsets.length - 1));
-  const targetOffset = state.pageOffsets[targetPage] || 0;
-
-  state.currentPage = targetPage;
-
-  state.viewport.scrollTo({
-    left: targetOffset,
-    behavior: smooth && !prefersReducedMotion.matches ? "smooth" : "auto",
-  });
-
-  updateCarouselButtons(state);
-};
-
-const syncCarouselFromScroll = (state) => {
+const getClosestPageIndex = (state) => {
   const { pageOffsets, viewport } = state;
   const currentLeft = viewport.scrollLeft;
 
@@ -204,6 +176,56 @@ const syncCarouselFromScroll = (state) => {
       closestPage = index;
     }
   });
+
+  return closestPage;
+};
+
+const updateCarouselButtons = (state) => {
+  const { currentPage, pageOffsets, prevButton, nextButton, status, paginationButtons } = state;
+  const totalPages = pageOffsets.length;
+
+  if (status) {
+    status.textContent = `${String(currentPage + 1).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`;
+  }
+
+  if (prevButton) {
+    prevButton.disabled = totalPages <= 1;
+  }
+
+  if (nextButton) {
+    nextButton.disabled = totalPages <= 1;
+  }
+
+  paginationButtons.forEach((button, index) => {
+    button.classList.toggle("is-active", index === currentPage);
+    button.setAttribute("aria-current", index === currentPage ? "true" : "false");
+  });
+};
+
+const scrollCarouselToPage = (state, page, smooth = true, wrap = false) => {
+  const totalPages = state.pageOffsets.length;
+
+  if (totalPages === 0) {
+    return;
+  }
+
+  const targetPage = wrap
+    ? getWrappedPage(page, totalPages)
+    : Math.max(0, Math.min(page, totalPages - 1));
+  const targetOffset = state.pageOffsets[targetPage] || 0;
+
+  state.currentPage = targetPage;
+
+  state.viewport.scrollTo({
+    left: targetOffset,
+    behavior: smooth && !prefersReducedMotion.matches ? "smooth" : "auto",
+  });
+
+  updateCarouselButtons(state);
+};
+
+const syncCarouselFromScroll = (state) => {
+  const closestPage = getClosestPageIndex(state);
 
   if (closestPage !== state.currentPage) {
     state.currentPage = closestPage;
@@ -282,6 +304,11 @@ const setupCarousels = () => {
       pageOffsets: [],
       scrollTicking: false,
       resizeFrame: 0,
+      dragPointerId: null,
+      dragStartX: 0,
+      dragStartScrollLeft: 0,
+      dragDeltaX: 0,
+      dragMoved: false,
     };
 
     if (!state.viewport || !state.track || state.slides.length === 0) {
@@ -289,11 +316,11 @@ const setupCarousels = () => {
     }
 
     state.prevButton?.addEventListener("click", () => {
-      scrollCarouselToPage(state, state.currentPage - 1);
+      scrollCarouselToPage(state, state.currentPage - 1, true, true);
     });
 
     state.nextButton?.addEventListener("click", () => {
-      scrollCarouselToPage(state, state.currentPage + 1);
+      scrollCarouselToPage(state, state.currentPage + 1, true, true);
     });
 
     state.viewport.addEventListener(
@@ -312,6 +339,92 @@ const setupCarousels = () => {
       },
       { passive: true }
     );
+
+    const stopDragging = (event) => {
+      if (state.dragPointerId === null) {
+        return;
+      }
+
+      if (event && "pointerId" in event && event.pointerId !== state.dragPointerId) {
+        return;
+      }
+
+      state.viewport.classList.remove("is-dragging");
+
+      const maxOffset = state.pageOffsets[state.pageOffsets.length - 1] || 0;
+      const threshold = 60;
+      const edgeThreshold = 12;
+      const atStart = state.viewport.scrollLeft <= edgeThreshold;
+      const atEnd = state.viewport.scrollLeft >= maxOffset - edgeThreshold;
+      const deltaX = state.dragDeltaX;
+      const moved = state.dragMoved;
+      const activePointerId = state.dragPointerId;
+
+      state.dragPointerId = null;
+      state.dragStartX = 0;
+      state.dragStartScrollLeft = 0;
+      state.dragDeltaX = 0;
+      state.dragMoved = false;
+
+      if (event && state.viewport.hasPointerCapture?.(activePointerId)) {
+        state.viewport.releasePointerCapture(activePointerId);
+      }
+
+      if (!moved && Math.abs(deltaX) < 1) {
+        return;
+      }
+
+      if (state.pageOffsets.length > 1) {
+        if (atStart && deltaX > threshold) {
+          scrollCarouselToPage(state, state.pageOffsets.length - 1);
+          return;
+        }
+
+        if (atEnd && deltaX < -threshold) {
+          scrollCarouselToPage(state, 0);
+          return;
+        }
+      }
+
+      scrollCarouselToPage(state, getClosestPageIndex(state));
+    };
+
+    state.viewport.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) {
+        return;
+      }
+
+      state.dragPointerId = event.pointerId;
+      state.dragStartX = event.clientX;
+      state.dragStartScrollLeft = state.viewport.scrollLeft;
+      state.dragDeltaX = 0;
+      state.dragMoved = false;
+
+      state.viewport.classList.add("is-dragging");
+      state.viewport.setPointerCapture?.(event.pointerId);
+    });
+
+    state.viewport.addEventListener("pointermove", (event) => {
+      if (state.dragPointerId !== event.pointerId) {
+        return;
+      }
+
+      state.dragDeltaX = event.clientX - state.dragStartX;
+
+      if (Math.abs(state.dragDeltaX) > 4) {
+        state.dragMoved = true;
+      }
+
+      state.viewport.scrollLeft = state.dragStartScrollLeft - state.dragDeltaX;
+
+      if (state.dragMoved) {
+        event.preventDefault();
+      }
+    });
+
+    state.viewport.addEventListener("pointerup", stopDragging);
+    state.viewport.addEventListener("pointercancel", stopDragging);
+    state.viewport.addEventListener("lostpointercapture", stopDragging);
 
     carouselStates.push(state);
     configureCarousel(state);
