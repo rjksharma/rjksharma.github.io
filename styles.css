@@ -874,7 +874,9 @@ h1 {
   color: var(--muted);
   font-size: 0.92rem;
 }
-
+.site-footer p{
+ text-align:center;
+}
 .reveal {
   opacity: 0;
   transform: translateY(28px) scale(0.985);
@@ -1139,4 +1141,22 @@ h1 {
   .carousel-viewport {
     scroll-behavior: auto;
   }
+}
+
+.social-icons{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin:auto 0;
+}
+
+.social-icons a{
+    font-size:20px;
+    color:white;
+    transition:0.3s ease;
+}
+
+.social-icons a:hover{
+    color:-accent;
+    transform:translateY(-5px);
 }
