@@ -5,7 +5,9 @@ const menuPanel = document.querySelector("[data-menu-panel]");
 const contactForm = document.querySelector("[data-contact-form]");
 const contactStatus = document.querySelector("[data-contact-status]");
 const yearNode = document.getElementById("year");
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const prefersReducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)",
+);
 const carouselStates = [];
 
 let scrollAnimationFrame = 0;
@@ -41,7 +43,10 @@ const smoothScrollToTarget = (target) => {
   }
 
   const headerOffset = topbar ? topbar.getBoundingClientRect().height + 20 : 0;
-  const destination = Math.max(target.getBoundingClientRect().top + window.scrollY - headerOffset, 0);
+  const destination = Math.max(
+    target.getBoundingClientRect().top + window.scrollY - headerOffset,
+    0,
+  );
 
   if (prefersReducedMotion.matches) {
     window.scrollTo(0, destination);
@@ -98,7 +103,7 @@ const revealObserver = new IntersectionObserver(
   {
     threshold: 0.14,
     rootMargin: "0px 0px -8% 0px",
-  }
+  },
 );
 
 const animateCounter = (node) => {
@@ -134,7 +139,7 @@ const counterObserver = new IntersectionObserver(
   },
   {
     threshold: 0.72,
-  }
+  },
 );
 
 const getVisibleCount = (carousel) => {
@@ -181,7 +186,14 @@ const getClosestPageIndex = (state) => {
 };
 
 const updateCarouselButtons = (state) => {
-  const { currentPage, pageOffsets, prevButton, nextButton, status, paginationButtons } = state;
+  const {
+    currentPage,
+    pageOffsets,
+    prevButton,
+    nextButton,
+    status,
+    paginationButtons,
+  } = state;
   const totalPages = pageOffsets.length;
 
   if (status) {
@@ -198,7 +210,10 @@ const updateCarouselButtons = (state) => {
 
   paginationButtons.forEach((button, index) => {
     button.classList.toggle("is-active", index === currentPage);
-    button.setAttribute("aria-current", index === currentPage ? "true" : "false");
+    button.setAttribute(
+      "aria-current",
+      index === currentPage ? "true" : "false",
+    );
   });
 };
 
@@ -337,7 +352,7 @@ const setupCarousels = () => {
           state.scrollTicking = false;
         });
       },
-      { passive: true }
+      { passive: true },
     );
 
     const stopDragging = (event) => {
@@ -345,7 +360,11 @@ const setupCarousels = () => {
         return;
       }
 
-      if (event && "pointerId" in event && event.pointerId !== state.dragPointerId) {
+      if (
+        event &&
+        "pointerId" in event &&
+        event.pointerId !== state.dragPointerId
+      ) {
         return;
       }
 
@@ -494,7 +513,7 @@ window.addEventListener(
 
     refreshCarousels();
   },
-  { passive: true }
+  { passive: true },
 );
 
 window.addEventListener(
@@ -502,11 +521,13 @@ window.addEventListener(
   () => {
     setScrolledState();
   },
-  { passive: true }
+  { passive: true },
 );
 
 revealNodes.forEach((node) => revealObserver.observe(node));
-document.querySelectorAll(".count-up").forEach((counter) => counterObserver.observe(counter));
+document
+  .querySelectorAll(".count-up")
+  .forEach((counter) => counterObserver.observe(counter));
 
 updateRevealDelays();
 setScrolledState();
@@ -553,7 +574,8 @@ if (contactForm && contactStatus) {
 
     const mailto = `mailto:rjksharma23@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
 
-    contactStatus.textContent = "Opening your email app with a prefilled message.";
+    contactStatus.textContent =
+      "Opening your email app with a prefilled message.";
     window.location.href = mailto;
     contactForm.reset();
   });
