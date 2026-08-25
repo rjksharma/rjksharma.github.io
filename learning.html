@@ -56,9 +56,10 @@
           <button class="pdf-close" type="button" data-pdf-close aria-label="Close document preview"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
-      <iframe class="pdf-frame" data-pdf-frame title="Learning material preview"></iframe>
+      <div class="pdf-stage" data-pdf-stage tabindex="0" aria-label="Learning material preview"></div>
     </dialog>
     <footer class="site-footer"><p>&copy; <span id="year"></span> Raj Kumar. Learning never stops.</p></footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="script.js"></script>
   </body>
 </html>

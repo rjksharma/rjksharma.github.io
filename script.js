@@ -700,7 +700,7 @@ const learningSearch = document.querySelector("[data-library-search]");
 const learningFilters = document.querySelector("[data-library-filters]");
 const learningEmpty = document.querySelector("[data-library-empty]");
 const pdfViewer = document.querySelector("[data-pdf-viewer]");
-const pdfFrame = document.querySelector("[data-pdf-frame]");
+const pdfStage = document.querySelector("[data-pdf-stage]");
 const pdfTitle = document.querySelector("[data-pdf-viewer-title]");
 const pdfOpen = document.querySelector("[data-pdf-open]");
 
@@ -720,6 +720,52 @@ const displayLearningTitle = (file) => file
   .replace(/\bpart\s+(\d+)/i, "Part $1")
   .replace(/\s+/g, " ")
   .trim();
+
+const showPdfMessage = (message, detail = "") => {
+  if (!pdfStage) return;
+  pdfStage.innerHTML = `<div class="pdf-stage-message"><div><strong>${message}</strong>${detail ? `<span>${detail}</span>` : ""}</div></div>`;
+};
+
+const renderPdfPreview = async (url) => {
+  if (!pdfStage) return;
+
+  showPdfMessage("Preparing preview…", "Loading the document pages.");
+
+  if (!window.pdfjsLib) {
+    showPdfMessage("Preview is unavailable.", "Use “Open in new tab” to view this PDF.");
+    return;
+  }
+
+  try {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf = await window.pdfjsLib.getDocument(url).promise;
+    pdfStage.replaceChildren();
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const availableWidth = Math.max(pdfStage.clientWidth - 12, 280);
+      const scale = Math.min(Math.max(availableWidth / baseViewport.width, 1), 1.65);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { alpha: false });
+      const density = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.floor(viewport.width * density);
+      canvas.height = Math.floor(viewport.height * density);
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
+      pdfStage.appendChild(canvas);
+      await page.render({
+        canvasContext: context,
+        viewport,
+        transform: density === 1 ? null : [density, 0, 0, density, 0, 0],
+      }).promise;
+    }
+  } catch (error) {
+    showPdfMessage("This document could not be previewed.", "Use “Open in new tab” to view or download it.");
+  }
+};
 
 if (learningList && learningFilters) {
   const learningItems = learningFiles.map((file) => ({
@@ -779,13 +825,13 @@ if (learningList && learningFilters) {
 
   learningList.addEventListener("click", (event) => {
     const trigger = event.target.closest("[data-pdf-url]");
-    if (!trigger || !pdfViewer || !pdfFrame || !pdfTitle || !pdfOpen) return;
+    if (!trigger || !pdfViewer || !pdfStage || !pdfTitle || !pdfOpen) return;
 
     const url = trigger.dataset.pdfUrl;
     pdfTitle.textContent = trigger.dataset.pdfTitle || "Document preview";
-    pdfFrame.src = url;
     pdfOpen.href = url;
     pdfViewer.showModal();
+    renderPdfPreview(url);
   });
 
   renderLibrary();
@@ -793,7 +839,7 @@ if (learningList && learningFilters) {
 
 document.querySelector("[data-pdf-close]")?.addEventListener("click", () => pdfViewer?.close());
 pdfViewer?.addEventListener("close", () => {
-  if (pdfFrame) pdfFrame.src = "";
+  if (pdfStage) pdfStage.replaceChildren();
 });
 
 const finishPageLoad = () => {
