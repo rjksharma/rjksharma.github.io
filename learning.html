@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Raj Kumar's engineering notes, handbooks, and practice sheets.">
+    <meta name="theme-color" content="#0a1520">
+    <title>Learning Library | Raj Kumar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/images/Rajkumar_Icon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="page-loader" aria-hidden="true"><div class="loader-mark">RK</div><div class="loader-line"><span></span></div></div>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+    <div class="cursor-glow" aria-hidden="true"></div>
+    <div class="backdrop" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Raj Kumar home"><span class="brand-mark">RK</span><span class="brand-copy"><strong>Raj Kumar</strong><small>Full Stack Engineer</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="primary-nav" data-menu-toggle><span></span><span></span><span></span></button>
+      <nav class="topnav" id="primary-nav" aria-label="Primary" data-menu-panel>
+        <a href="index.html#experience">Experience</a>
+        <a href="index.html#projects">Projects</a>
+        <a class="is-active" href="learning.html">Learning</a>
+        <a href="index.html#certifications">Certifications</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+    </header>
+    <main>
+      <section class="section learning-section" id="learning">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Learning Library</p>
+          <h1>Notes, handbooks, and practice sheets from my engineering journey.</h1>
+          <p class="lede">Browse the resources I use to sharpen fundamentals, build production-ready systems, and keep learning across the stack.</p>
+        </div>
+        <div class="library-toolbar reveal">
+          <label class="library-search">
+            <span class="sr-only">Search learning materials</span>
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" data-library-search placeholder="Search notes, topics, or technologies">
+          </label>
+          <div class="library-filters" data-library-filters aria-label="Filter learning materials"></div>
+        </div>
+        <div class="learning-grid" data-learning-list aria-live="polite"></div>
+        <p class="library-empty" data-library-empty hidden>No learning material matches that search.</p>
+      </section>
+    </main>
+    <dialog class="pdf-viewer" data-pdf-viewer aria-labelledby="pdf-viewer-title">
+      <div class="pdf-viewer-head">
+        <div><p class="eyebrow">Learning Material</p><h2 id="pdf-viewer-title" data-pdf-viewer-title>Document preview</h2></div>
+        <div class="pdf-viewer-actions">
+          <a class="pdf-open" data-pdf-open target="_blank" rel="noreferrer">Open in new tab <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+          <button class="pdf-close" type="button" data-pdf-close aria-label="Close document preview"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        </div>
+      </div>
+      <iframe class="pdf-frame" data-pdf-frame title="Learning material preview"></iframe>
+    </dialog>
+    <footer class="site-footer"><p>&copy; <span id="year"></span> Raj Kumar. Learning never stops.</p></footer>
+    <script src="script.js"></script>
+  </body>
+</html>

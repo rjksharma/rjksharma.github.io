@@ -239,7 +239,12 @@ const scrollCarouselToPage = (state, page, smooth = true, wrap = false) => {
   const targetPage = wrap
     ? getWrappedPage(page, totalPages)
     : Math.max(0, Math.min(page, totalPages - 1));
-  const targetOffset = state.pageOffsets[targetPage] || 0;
+  const isLoopJump = state.loop && wrap && (page < 0 || page >= totalPages);
+  const targetOffset = isLoopJump
+    ? (page < 0
+      ? state.prePageOffsets[totalPages - 1]
+      : state.postPageOffsets[0])
+    : state.pageOffsets[targetPage] || 0;
 
   state.currentPage = targetPage;
 
@@ -249,6 +254,21 @@ const scrollCarouselToPage = (state, page, smooth = true, wrap = false) => {
   });
 
   updateCarouselButtons(state);
+
+  if (isLoopJump) {
+    window.clearTimeout(state.loopTimer);
+    state.loopTimer = window.setTimeout(() => {
+      state.viewport.scrollTo({
+        left: state.pageOffsets[targetPage] || 0,
+        behavior: "auto",
+      });
+    }, prefersReducedMotion.matches ? 0 : 620);
+  }
+};
+
+const getCarouselStep = (carousel, visibleCount) => {
+  const configuredStep = Number(carousel.dataset.step || "0");
+  return configuredStep > 0 ? configuredStep : visibleCount;
 };
 
 const syncCarouselFromScroll = (state) => {
@@ -287,16 +307,28 @@ const buildCarouselPagination = (state) => {
 const configureCarousel = (state, smooth = false) => {
   const { carousel, slides } = state;
   const visibleCount = getVisibleCount(carousel);
+  const step = getCarouselStep(carousel, visibleCount);
   const pageOffsets = [];
 
   carousel.style.setProperty("--visible-count", String(visibleCount));
 
-  for (let index = 0; index < slides.length; index += visibleCount) {
+  for (let index = 0; index < slides.length; index += step) {
     pageOffsets.push(slides[index].offsetLeft);
   }
 
   state.visibleCount = visibleCount;
+  state.step = step;
   state.pageOffsets = pageOffsets;
+
+  if (state.loop) {
+    state.prePageOffsets = [];
+    state.postPageOffsets = [];
+
+    for (let index = 0; index < state.preClones.length; index += step) {
+      state.prePageOffsets.push(state.preClones[index].offsetLeft);
+      state.postPageOffsets.push(state.postClones[index].offsetLeft);
+    }
+  }
 
   const hasPages = pageOffsets.length > 1;
   carousel.dataset.hasPages = hasPages ? "true" : "false";
@@ -336,10 +368,44 @@ const setupCarousels = () => {
       dragStartScrollLeft: 0,
       dragDeltaX: 0,
       dragMoved: false,
+      loop: carousel.dataset.loop === "true",
+      preClones: [],
+      postClones: [],
+      prePageOffsets: [],
+      postPageOffsets: [],
+      loopTimer: 0,
+      autoTimer: 0,
     };
 
     if (!state.viewport || !state.track || state.slides.length === 0) {
       return;
+    }
+
+    if (state.loop) {
+      const makeClone = (slide) => {
+        const clone = slide.cloneNode(true);
+        clone.dataset.carouselClone = "true";
+        clone.setAttribute("aria-hidden", "true");
+        clone.classList.remove("reveal", "is-visible");
+        return clone;
+      };
+
+      const preFragment = document.createDocumentFragment();
+      state.slides.forEach((slide) => {
+        const clone = makeClone(slide);
+        state.preClones.push(clone);
+        preFragment.appendChild(clone);
+      });
+
+      const postFragment = document.createDocumentFragment();
+      state.slides.forEach((slide) => {
+        const clone = makeClone(slide);
+        state.postClones.push(clone);
+        postFragment.appendChild(clone);
+      });
+
+      state.track.prepend(preFragment);
+      state.track.append(postFragment);
     }
 
     state.prevButton?.addEventListener("click", () => {
@@ -407,12 +473,12 @@ const setupCarousels = () => {
 
       if (state.pageOffsets.length > 1) {
         if (atStart && deltaX > threshold) {
-          scrollCarouselToPage(state, state.pageOffsets.length - 1);
+          scrollCarouselToPage(state, state.currentPage - 1, true, true);
           return;
         }
 
         if (atEnd && deltaX < -threshold) {
-          scrollCarouselToPage(state, 0);
+          scrollCarouselToPage(state, state.currentPage + 1, true, true);
           return;
         }
       }
@@ -459,6 +525,24 @@ const setupCarousels = () => {
 
     carouselStates.push(state);
     configureCarousel(state);
+
+    if (carousel.dataset.autoplay === "true" && !prefersReducedMotion.matches) {
+      const pauseAutoPlay = () => window.clearInterval(state.autoTimer);
+      const startAutoPlay = () => {
+        pauseAutoPlay();
+        state.autoTimer = window.setInterval(() => {
+          if (!document.hidden && state.dragPointerId === null) {
+            scrollCarouselToPage(state, state.currentPage + 1, true, true);
+          }
+        }, 4200);
+      };
+
+      carousel.addEventListener("pointerenter", pauseAutoPlay);
+      carousel.addEventListener("pointerleave", startAutoPlay);
+      carousel.addEventListener("focusin", pauseAutoPlay);
+      carousel.addEventListener("focusout", startAutoPlay);
+      startAutoPlay();
+    }
   });
 };
 
@@ -596,6 +680,121 @@ if (contactForm && contactStatus) {
 if (yearNode) {
   yearNode.textContent = String(new Date().getFullYear());
 }
+
+const learningFiles = [
+  "Ai handbook.pdf", "C--.pdf", "CN notes part 2.pdf", "Coding Pattern.pdf", "Collections.pdf",
+  "Computer Networks notes 1.pdf", "Copy of Sql part 2.pdf", "DevOps Notes.pdf", "Docker notes.pdf", "DSASheet.pdf",
+  "Git Notes.pdf", "GitSheet.pdf", "Java Fundamental 1.pdf", "Java Program part 1.pdf", "Java script 2.pdf",
+  "Java script part 1.pdf", "Java Tricky.pdf", "Kafka.pdf", "Kubernates Notes.pdf", "Linux pdf.pdf",
+  "Low level design .pdf", "Maven Handbook.pdf", "NodeJs.pdf", "Oops.pdf", "Opesrating system.pdf",
+  "Playwright .pdf", "Playwright Framework .pdf", "Playwright questions.pdf", "Python cheat sheet.pdf", "Python Oops and Collection .pdf",
+  "Python part 3.pdf", "Python Questions .pdf", "Python Quick Notes.pdf", "Python sheet 2.pdf", "React Js.pdf",
+  "Recursion .pdf", "Rest Api.pdf", "Rest Assured .pdf", "Selenium Questions.pdf", "Selenium.pdf",
+  "Sorting And Searching.pdf", "Spring boot part 1.pdf", "Spring boot part 2.pdf", "Spring JPA- JWT.pdf", "Sql cheat sheet.pdf",
+  "Sql handbook 1.pdf", "Sql part 2.pdf", "Sql Sheet.pdf", "System design part 1.pdf", "System design part 2.pdf",
+  "System design Questions .pdf", "Tree and Graph.pdf", "Web development .pdf",
+];
+
+const learningList = document.querySelector("[data-learning-list]");
+const learningSearch = document.querySelector("[data-library-search]");
+const learningFilters = document.querySelector("[data-library-filters]");
+const learningEmpty = document.querySelector("[data-library-empty]");
+const pdfViewer = document.querySelector("[data-pdf-viewer]");
+const pdfFrame = document.querySelector("[data-pdf-frame]");
+const pdfTitle = document.querySelector("[data-pdf-viewer-title]");
+const pdfOpen = document.querySelector("[data-pdf-open]");
+
+const getLearningCategory = (file) => {
+  const name = file.toLowerCase();
+  if (/(python|java |c--|nodejs|react|web development|javascript)/.test(name)) return "Development";
+  if (/(sql|rest|api|spring|maven|kafka)/.test(name)) return "Backend & Data";
+  if (/(docker|kubernates|devops|git|linux)/.test(name)) return "Cloud & DevOps";
+  if (/(system design|low level|coding pattern|dsa|recursion|sorting|tree|graph)/.test(name)) return "Engineering";
+  if (/(playwright|selenium)/.test(name)) return "Testing";
+  if (/(network|opesrating)/.test(name)) return "Fundamentals";
+  return "General";
+};
+
+const displayLearningTitle = (file) => file
+  .replace(/\.pdf$/i, "")
+  .replace(/\bpart\s+(\d+)/i, "Part $1")
+  .replace(/\s+/g, " ")
+  .trim();
+
+if (learningList && learningFilters) {
+  const learningItems = learningFiles.map((file) => ({
+    file,
+    title: displayLearningTitle(file),
+    category: getLearningCategory(file),
+    href: encodeURI(`assets/notes/${file}`),
+  }));
+  let activeLearningFilter = "All";
+  let learningQuery = "";
+
+  const renderLibrary = () => {
+    const filteredItems = learningItems.filter((item) => {
+      const matchesFilter = activeLearningFilter === "All" || item.category === activeLearningFilter;
+      const searchable = `${item.title} ${item.category}`.toLowerCase();
+      return matchesFilter && searchable.includes(learningQuery);
+    });
+
+    learningList.replaceChildren(...filteredItems.map((item) => {
+      const card = document.createElement("article");
+      card.className = "learning-card";
+      card.innerHTML = `
+        <div class="learning-card-top">
+          <span class="learning-icon"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i></span>
+          <span class="learning-category">${item.category}</span>
+        </div>
+        <h3>${item.title}</h3>
+        <p>Personal learning note and reference material.</p>
+        <button class="learning-open" type="button" data-pdf-url="${item.href}" data-pdf-title="${item.title}">Preview PDF <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>`;
+      return card;
+    }));
+
+    learningEmpty.hidden = filteredItems.length > 0;
+  };
+
+  const categories = ["All", ...new Set(learningItems.map((item) => item.category))];
+  learningFilters.replaceChildren(...categories.map((category) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "library-filter";
+    button.textContent = category;
+    button.classList.toggle("is-active", category === activeLearningFilter);
+    button.addEventListener("click", () => {
+      activeLearningFilter = category;
+      learningFilters.querySelectorAll("button").forEach((filterButton) => {
+        filterButton.classList.toggle("is-active", filterButton.textContent === category);
+      });
+      renderLibrary();
+    });
+    return button;
+  }));
+
+  learningSearch?.addEventListener("input", () => {
+    learningQuery = learningSearch.value.trim().toLowerCase();
+    renderLibrary();
+  });
+
+  learningList.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-pdf-url]");
+    if (!trigger || !pdfViewer || !pdfFrame || !pdfTitle || !pdfOpen) return;
+
+    const url = trigger.dataset.pdfUrl;
+    pdfTitle.textContent = trigger.dataset.pdfTitle || "Document preview";
+    pdfFrame.src = url;
+    pdfOpen.href = url;
+    pdfViewer.showModal();
+  });
+
+  renderLibrary();
+}
+
+document.querySelector("[data-pdf-close]")?.addEventListener("click", () => pdfViewer?.close());
+pdfViewer?.addEventListener("close", () => {
+  if (pdfFrame) pdfFrame.src = "";
+});
 
 const finishPageLoad = () => {
   if (!pageLoader) {
