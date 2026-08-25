@@ -9,6 +9,9 @@ const prefersReducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",
 );
 const carouselStates = [];
+const progressBar = document.querySelector(".scroll-progress span");
+const cursorGlow = document.querySelector(".cursor-glow");
+const pageLoader = document.querySelector(".page-loader");
 
 let scrollAnimationFrame = 0;
 
@@ -27,6 +30,15 @@ const setScrolledState = () => {
   }
 
   topbar.classList.toggle("is-scrolled", window.scrollY > 16);
+
+  const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollableHeight > 0
+    ? Math.min((window.scrollY / scrollableHeight) * 100, 100)
+    : 0;
+
+  if (progressBar) {
+    progressBar.style.width = `${progress}%`;
+  }
 };
 
 const easeInOutCubic = (progress) => {
@@ -59,7 +71,7 @@ const smoothScrollToTarget = (target) => {
 
   const startY = window.scrollY;
   const distance = destination - startY;
-  const duration = 900;
+  const duration = Math.min(1500, Math.max(700, Math.abs(distance) * 0.52));
   let startTime = 0;
 
   const step = (timestamp) => {
@@ -583,4 +595,90 @@ if (contactForm && contactStatus) {
 
 if (yearNode) {
   yearNode.textContent = String(new Date().getFullYear());
+}
+
+const finishPageLoad = () => {
+  if (!pageLoader) {
+    return;
+  }
+
+  window.setTimeout(() => pageLoader.classList.add("is-complete"), 280);
+};
+
+if (document.readyState === "complete") {
+  finishPageLoad();
+} else {
+  window.addEventListener("load", finishPageLoad, { once: true });
+}
+
+// Desktop-only motion keeps touch interactions direct and preserves accessibility.
+const motionEnabled = !prefersReducedMotion.matches && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+if (motionEnabled) {
+  document.body.addEventListener("pointermove", (event) => {
+    if (!cursorGlow) {
+      return;
+    }
+
+    cursorGlow.style.left = `${event.clientX}px`;
+    cursorGlow.style.top = `${event.clientY}px`;
+    document.body.classList.add("cursor-active");
+  }, { passive: true });
+
+  document.body.addEventListener("pointerleave", () => {
+    document.body.classList.remove("cursor-active");
+  });
+
+  document.querySelectorAll(".button, .carousel-button").forEach((element) => {
+    element.addEventListener("pointermove", (event) => {
+      const bounds = element.getBoundingClientRect();
+      const offsetX = (event.clientX - bounds.left - bounds.width / 2) * 0.13;
+      const offsetY = (event.clientY - bounds.top - bounds.height / 2) * 0.16;
+      element.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    });
+
+    element.addEventListener("pointerleave", () => {
+      element.style.removeProperty("transform");
+    });
+  });
+
+  document.querySelectorAll(".metric-card, .info-card, .timeline-card, .project-card, .skill-card, .contact-card, .contact-form, .certificate-card").forEach((card) => {
+    card.classList.add("tilt-card");
+    card.addEventListener("pointermove", (event) => {
+      const bounds = card.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) / bounds.width;
+      const y = (event.clientY - bounds.top) / bounds.height;
+      const rotateY = (x - 0.5) * 5;
+      const rotateX = (0.5 - y) * 5;
+
+      card.style.setProperty("--pointer-x", `${x * 100}%`);
+      card.style.setProperty("--pointer-y", `${y * 100}%`);
+      card.style.transform = `perspective(900px) translateY(-6px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.removeProperty("transform");
+    });
+  });
+}
+
+const navLinks = Array.from(document.querySelectorAll(".topnav a[href^='#']"));
+const navSections = navLinks
+  .map((link) => document.querySelector(link.getAttribute("href")))
+  .filter(Boolean);
+
+if (navSections.length) {
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) {
+        return;
+      }
+
+      navLinks.forEach((link) => {
+        link.classList.toggle("is-active", link.getAttribute("href") === `#${entry.target.id}`);
+      });
+    });
+  }, { rootMargin: "-35% 0px -55% 0px", threshold: 0 });
+
+  navSections.forEach((section) => navObserver.observe(section));
 }

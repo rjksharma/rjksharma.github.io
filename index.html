@@ -19,6 +19,12 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   </head>
   <body>
+    <div class="page-loader" aria-hidden="true">
+      <div class="loader-mark">RK</div>
+      <div class="loader-line"><span></span></div>
+    </div>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+    <div class="cursor-glow" aria-hidden="true"></div>
     <div class="backdrop" aria-hidden="true"></div>
     <header class="topbar">
       <a class="brand" href="#home" aria-label="Raj Kumar home">
@@ -79,6 +85,10 @@
 
         <aside class="hero-visual reveal">
           <div class="portrait-frame">
+            <span class="orbit orbit-one" aria-hidden="true"></span>
+            <span class="orbit orbit-two" aria-hidden="true"></span>
+            <span class="visual-code code-one" aria-hidden="true">&lt;/&gt;</span>
+            <span class="visual-code code-two" aria-hidden="true">01</span>
             <img src="assets/images/rajkumar-portrait.jpeg"
               alt="Portrait of Raj Kumar wearing a blue suit">
             <div class="spotlight-card">
