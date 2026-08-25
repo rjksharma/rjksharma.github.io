@@ -726,12 +726,25 @@ const showPdfMessage = (message, detail = "") => {
   pdfStage.innerHTML = `<div class="pdf-stage-message"><div><strong>${message}</strong>${detail ? `<span>${detail}</span>` : ""}</div></div>`;
 };
 
+const renderHostedPdfFallback = (url) => {
+  if (!pdfStage) return;
+
+  const absoluteUrl = new URL(url, window.location.href).href;
+  const viewer = document.createElement("iframe");
+  viewer.className = "pdf-hosted-viewer";
+  viewer.title = "Document preview";
+  viewer.src = `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(absoluteUrl)}`;
+  pdfStage.replaceChildren(viewer);
+};
+
 const renderPdfPreview = async (url) => {
   if (!pdfStage) return;
 
   showPdfMessage("Preparing preview…", "Loading the document pages.");
 
   if (!window.pdfjsLib) {
+    renderHostedPdfFallback(url);
+    return;
     showPdfMessage("Preview is unavailable.", "Use “Open in new tab” to view this PDF.");
     return;
   }
@@ -763,6 +776,8 @@ const renderPdfPreview = async (url) => {
       }).promise;
     }
   } catch (error) {
+    renderHostedPdfFallback(url);
+    return;
     showPdfMessage("This document could not be previewed.", "Use “Open in new tab” to view or download it.");
   }
 };
